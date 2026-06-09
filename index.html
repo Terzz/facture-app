@@ -648,7 +648,7 @@
   }
   function applyStoredEmitter(data) {
     const e = loadEmitter();
-    if (e) { for (const k of EMITTER_FIELDS) { if (e[k]) data[k] = e[k]; } }
+    if (e) { for (const k of EMITTER_FIELDS) { if (e[k] && !data[k]) data[k] = e[k]; } }
     return data;
   }
 
@@ -962,7 +962,11 @@
           // Ancien format (facture unique) : chargé comme brouillon non enregistré
           state = { data: parsed.data, items: parsed.items };
           currentId = null;
+          applyStoredEmitter(state.data);
           saveEmitterFrom(state.data);
+          if (!state.data.invoiceNumber) state.data.invoiceNumber = nextInvoiceNumber();
+          if (!state.data.issueDate) state.data.issueDate = todayFr();
+          if (!state.data.vatMention) state.data.vatMention = initialData.vatMention;
           syncFormFromState();
           renderItems();
           renderPreview();

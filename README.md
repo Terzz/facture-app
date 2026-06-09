@@ -60,6 +60,20 @@ Elles voyagent aussi dans tes exports JSON.
   une sauvegarde JSON (qui les contient).
 - Le site publié ne sert que des champs vides — rien de personnel n'est exposé.
 
+## Créer une facture depuis tes notes (via Cowork)
+
+Pas besoin d'IA dans l'app : laisse **Cowork** lire une capture de tes notes Apple et produire un JSON,
+puis **importe-le** ici. À l'import, l'app complète toute seule ton émetteur (depuis ton navigateur), le
+numéro de facture et la date — Cowork n'a qu'à extraire le **client** et les **lignes**.
+
+Prompt à donner à Cowork (avec la capture jointe) :
+
+> À partir de cette capture de mes notes, génère **uniquement** un JSON (aucun texte autour), au format :
+> `{ "data": { "clientName": "", "clientAddress": "", "executionDates": "" }, "items": [ { "description": "", "unitPrice": "20.00", "quantity": "1", "vat": "-" } ] }`
+> Règles : prise de son = 20.00 €/h (`quantity` = nombre d'heures) ; mix = forfait (`quantity` 1, `unitPrice` = prix du forfait). `vat` toujours `"-"`. N'inclus **ni** numéro de facture, **ni** dates d'émission/échéance, **ni** infos émetteur (l'app les remplit).
+
+Puis dans l'app : **Importer JSON** → relis/corrige si besoin → **Enregistrer**.
+
 ## Déploiement (GitHub Pages)
 
 Site statique pur, hébergé gratuitement sur GitHub Pages depuis la branche `main`, dossier racine.
