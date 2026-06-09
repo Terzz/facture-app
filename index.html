@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Générateur de facture — TERZ PROD</title>
+<style>
+  :root {
+    --text:#0f172a;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --soft:#f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: #f3f4f6;
+  }
+  .app-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+  }
+  .sidebar {
+    border-right: 1px solid #dbe0e8;
+    background: #ffffff;
+    padding: 20px;
+    overflow: auto;
+    max-height: 100vh;
+  }
+  .sidebar h1 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .sidebar p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .group {
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #edf0f3;
+  }
+  .group h2 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  .field {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .field label {
+    font-size: 12px;
+    color: #334155;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    border: 1px solid #d7dde5;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+    background: #fff;
+    resize: vertical;
+  }
+  .field input[readonly] {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  .field textarea {
+    min-height: 72px;
+  }
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  button, .file-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+    display: inline-block;
+  }
+  .primary {
+    background: #0f172a;
+    color: white;
+  }
+  .secondary {
+    background: #eef2f7;
+    color: #0f172a;
+  }
+  .ghost {
+    background: transparent;
+    color: #0f172a;
+    border: 1px solid #d7dde5;
+  }
+  .item-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #fafbfc;
+  }
+  .item-card .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+  .item-card .item-head strong {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+  .item-head-actions { display:flex; gap:6px; }
+  .move {
+    background: #eef2f7;
+    color: #0f172a;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .move:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+  }
+  .duplicate {
+    background: #e0f2fe;
+    color: #075985;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .delete {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  /* --- Historique multi-factures (sidebar uniquement ; masqué à l'impression) --- */
+  .invoice-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .invoice-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fafbfc;
+    overflow: hidden;
+  }
+  .invoice-row.active {
+    border-color: #0f172a;
+    background: var(--soft);
+    box-shadow: inset 3px 0 0 #0f172a;
+  }
+  .invoice-open {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border-radius: 0;
+    padding: 10px 12px;
+    text-align: left;
+    display: grid;
+    gap: 2px;
+  }
+  .invoice-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .invoice-main strong { font-size: 14px; }
+  .invoice-client {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .invoice-sub {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .invoice-sub .invoice-total {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .invoice-del {
+    align-self: center;
+    margin-right: 8px;
+    flex: none;
+  }
+  .dirty-badge {
+    color: #f59e0b;
+    font-size: 11px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .empty-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .preview-wrap {
+    overflow: auto;
+    padding: 24px;
+    background: #eef2f6;
+    max-height: 100vh;
+  }
+  .page {
+    max-width: 800px;
+    margin: 24px auto;
+    padding: 28px;
+    background: white;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  }
+  header.invoice-header {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    border-bottom:1px solid var(--text);
+    padding-bottom:12px;
+    margin-bottom:18px;
+  }
+  .title {
+    font-weight:700;
+    font-size: 22px;
+    letter-spacing:.5px;
+  }
+  .meta {
+    text-align:right;
+    font-size:13px;
+  }
+  .meta b { font-weight:600; }
+  .grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:18px;
+  }
+  .card {
+    background:var(--soft);
+    border:1px solid var(--line);
+    padding:12px 14px;
+    border-radius:10px;
+  }
+  .label {
+    color:var(--muted);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .h6 {
+    margin:2px 0 0;
+    font-weight:600;
+  }
+  .list { margin:6px 0 0; }
+  .list div { margin:0; }
+  .row {
+    display:flex;
+    gap:12px;
+    padding:10px 0;
+    border-top:1px solid var(--line);
+    margin-top:18px;
+  }
+  .row > div {
+    flex:1;
+    min-width: 0;
+  }
+  .row .val {
+    font-weight:600;
+    word-break: break-word;
+  }
+  table.invoice-table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:8px;
+  }
+  .invoice-table th,
+  .invoice-table td {
+    padding:10px 8px;
+    vertical-align:top;
+  }
+  .invoice-table th {
+    text-align:left;
+    font-weight:700;
+    border-top:2px solid var(--text);
+    border-bottom:2px solid var(--text);
+  }
+  .invoice-table td {
+    border-bottom:1px solid var(--line);
+  }
+  .invoice-table td.amount,
+  .invoice-table th.amount {
+    text-align:right;
+    white-space:nowrap;
+  }
+  .totals {
+    display:flex;
+    justify-content:flex-end;
+    margin-top:10px;
+  }
+  .totals table { width:auto; border-collapse: collapse; }
+  .totals td { padding:8px 12px; }
+  .totals tr:last-child td {
+    border-top:1.5px solid var(--text);
+    font-weight:700;
+  }
+  .totals td.amount { text-align:right; white-space:nowrap; }
+  footer.invoice-footer {
+    margin-top:16px;
+    color:var(--muted);
+    font-size:12px;
+  }
+  /* hidden file input used by Import */
+  #importFile { display:none; }
+
+  @media print {
+    body { background: #fff; }
+    .sidebar { display: none !important; }
+    .app-shell { display: block; }
+    .preview-wrap { padding: 0; background: white; max-height: none; overflow: visible; }
+    .page { box-shadow:none; margin:0; padding:0; max-width:none; }
+    @page { size: A4; margin: 18mm; }
+  }
+
+  @media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar, .preview-wrap { max-height: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <h1>Générateur de facture</h1>
+    <p>Version HTML autonome — modifiez les champs, l'aperçu se met à jour en direct.</p>
+
+    <div class="group" id="invoicesGroup">
+      <h2>Mes factures</h2>
+      <div class="actions" style="margin-bottom:12px;">
+        <button class="primary" onclick="newInvoice()">Nouvelle facture</button>
+        <button class="secondary" onclick="saveCurrent()">Enregistrer <span class="dirty-badge" id="dirtyBadge" hidden title="Modifications non enregistrées">●</span></button>
+      </div>
+      <ul class="invoice-list" id="invoiceList"></ul>
+      <p class="empty-hint" id="emptyHint" hidden>Aucune facture enregistrée. Cliquez « Enregistrer » pour sauvegarder la facture en cours.</p>
+    </div>
+
+    <div class="actions">
+      <button class="primary" onclick="window.print()">Imprimer / PDF</button>
+      <button class="secondary" onclick="resetTemplate()">Réinitialiser</button>
+      <button class="ghost" onclick="exportJSON()">Exporter JSON</button>
+      <button class="ghost" onclick="exportAll()">Exporter tout</button>
+      <label class="ghost file-btn" for="importFile">Importer JSON</label>
+      <input type="file" id="importFile" accept=".json,application/json">
+    </div>
+
+    <div class="group">
+      <h2>Facture</h2>
+      <div class="row-2">
+        <div class="field">
+          <label>Numéro</label>
+          <input data-field="invoiceNumber">
+        </div>
+        <div class="field">
+          <label>Date d'émission</label>
+          <input data-field="issueDate" placeholder="JJ/MM/AAAA">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Échéance</label>
+          <input data-field="dueDate" placeholder="JJ/MM/AAAA">
+        </div>
+        <div class="field">
+          <label>Date(s) d'exécution</label>
+          <input data-field="executionDates">
+        </div>
+      </div>
+      <div class="field">
+        <label>Mention TVA</label>
+        <input data-field="vatMention">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Émetteur</h2>
+      <div class="field">
+        <label>Marque / raison sociale</label>
+        <input data-field="emitterBrand">
+      </div>
+      <div class="field">
+        <label>Nom</label>
+        <input data-field="emitterName">
+      </div>
+      <div class="field">
+        <label>SIRET</label>
+        <input data-field="emitterSiret">
+      </div>
+      <div class="field">
+        <label>Adresse (une ligne par ligne)</label>
+        <textarea data-field="emitterAddress"></textarea>
+      </div>
+      <div class="field">
+        <label>Téléphone</label>
+        <input data-field="emitterPhone">
+      </div>
+      <div class="field">
+        <label>IBAN</label>
+        <input data-field="emitterIban">
+      </div>
+      <div class="field">
+        <label>BIC</label>
+        <input data-field="emitterBic">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Client</h2>
+      <div class="field">
+        <label>Nom / société</label>
+        <input data-field="clientName">
+      </div>
+      <div class="field">
+        <label>Adresse (une ligne par ligne)</label>
+        <textarea data-field="clientAddress"></textarea>
+      </div>
+      <div class="field">
+        <label>SIREN</label>
+        <input data-field="clientSiren">
+      </div>
+      <div class="field">
+        <label>SIRET</label>
+        <input data-field="clientSiret">
+      </div>
+      <div class="field">
+        <label>TVA</label>
+        <input data-field="clientVat">
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Lignes</h2>
+      <div id="itemsContainer"></div>
+      <button class="secondary" onclick="addItem()">Ajouter une ligne</button>
+    </div>
+  </aside>
+
+  <main class="preview-wrap">
+    <section class="page">
+      <header class="invoice-header">
+        <div class="title">FACTURE</div>
+        <div class="meta">
+          <div><b>N°</b> <span data-preview="invoiceNumber"></span></div>
+          <div><b>Émise le</b> <span data-preview="issueDate"></span></div>
+          <div><b>Échéance</b> <span data-preview="dueDate"></span></div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="card">
+          <div class="label">Émetteur</div>
+          <div class="h6"><span data-preview="emitterBrand"></span> — <span data-preview="emitterName"></span></div>
+          <div class="list">
+            <div data-preview="emitterAddress" data-multiline="1"></div>
+            <div>SIRET : <span data-preview="emitterSiret"></span></div>
+            <div>Tél. : <span data-preview="emitterPhone"></span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="label">Client</div>
+          <div class="h6"><span data-preview="clientName"></span></div>
+          <div class="list">
+            <div data-preview="clientAddress" data-multiline="1"></div>
+            <div>SIREN : <span data-preview="clientSiren"></span></div>
+            <div>SIRET : <span data-preview="clientSiret"></span></div>
+            <div>TVA : <span data-preview="clientVat"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row">
+        <div>
+          <div class="label">Date de facture</div>
+          <div class="val" data-preview="issueDate"></div>
+        </div>
+        <div>
+          <div class="label">Date(s) d'exécution</div>
+          <div class="val" data-preview="executionDates"></div>
+        </div>
+        <div>
+          <div class="label">Échéance</div>
+          <div class="val" data-preview="dueDate"></div>
+        </div>
+      </section>
+
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Nom / description</th>
+            <th class="amount">Prix unitaire HT</th>
+            <th class="amount">Quantité</th>
+            <th class="amount">TVA</th>
+            <th class="amount">Montant</th>
+          </tr>
+        </thead>
+        <tbody id="previewItemsBody"></tbody>
+      </table>
+
+      <div class="totals">
+        <table>
+          <tbody>
+            <tr>
+              <td>Sous-total</td>
+              <td class="amount" id="previewSubtotal"></td>
+            </tr>
+            <tr>
+              <td>Total à payer</td>
+              <td class="amount" id="previewTotal"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="invoice-footer">
+        <div>IBAN : <span data-preview="emitterIban"></span> — BIC : <span data-preview="emitterBic"></span></div>
+        <div data-preview="vatMention"></div>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+  // ---------- Données initiales ----------
+  const initialItems = [
+    { description: "Prestation", unitPrice: "0.00", quantity: "1", vat: "-" }
+  ];
+
+  const initialData = {
+    invoiceNumber: "INV-1",
+    issueDate: "",
+    dueDate: "",
+    executionDates: "",
+    emitterBrand: "",
+    emitterName: "",
+    emitterSiret: "",
+    emitterAddress: "",
+    emitterPhone: "",
+    emitterIban: "",
+    emitterBic: "",
+    clientName: "",
+    clientAddress: "",
+    clientSiren: "",
+    clientSiret: "",
+    clientVat: "",
+    vatMention: "TVA non applicable, art. 293 B du CGI"
+  };
+
+  // ---------- État ----------
+  let state = {
+    data: structuredClone(initialData),
+    items: structuredClone(initialItems)
+  };
+
+  // ---------- Store multi-factures (localStorage) ----------
+  const STORE_KEY = "terzprod.invoices.v1";
+  let invoices = [];     // [{ id, data, items }]
+  let currentId = null;  // id de la facture ouverte, ou null pour un brouillon non enregistré
+  let dirty = false;     // modifications non enregistrées
+  let idCounter = 0;
+
+  function makeId() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    idCounter++;
+    return "id-" + Date.now() + "-" + idCounter;
+  }
+  function loadStore() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      invoices = (parsed && Array.isArray(parsed.invoices)) ? parsed.invoices : [];
+    } catch (e) {
+      invoices = [];
+    }
+  }
+  function saveStore() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ invoices }));
+    } catch (e) {
+      alert("Impossible d'enregistrer : stockage du navigateur plein ou indisponible.");
+    }
+  }
+  function todayFr() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, "0");
+    return p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear();
+  }
+  function nextInvoiceNumber() {
+    let max = 0;
+    for (const inv of invoices) {
+      const m = /^INV-(\d+)$/.exec(String(inv.data && inv.data.invoiceNumber || "").trim());
+      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+    }
+    return "INV-" + (max + 1);
+  }
+  function invoiceTotal(inv) {
+    return (inv.items || []).reduce((s, it) => s + lineTotal(it), 0);
+  }
+
+  // ---------- Émetteur enregistré (jamais publié — reste sur cet appareil) ----------
+  const EMITTER_KEY = "terzprod.emitter.v1";
+  const EMITTER_FIELDS = ["emitterBrand", "emitterName", "emitterSiret", "emitterAddress", "emitterPhone", "emitterIban", "emitterBic"];
+  function loadEmitter() {
+    try { return JSON.parse(localStorage.getItem(EMITTER_KEY) || "null"); } catch (e) { return null; }
+  }
+  function saveEmitterFrom(data) {
+    const out = {};
+    let any = false;
+    for (const k of EMITTER_FIELDS) { out[k] = data[k] || ""; if (out[k]) any = true; }
+    if (any) { try { localStorage.setItem(EMITTER_KEY, JSON.stringify(out)); } catch (e) {} }
+  }
+  function applyStoredEmitter(data) {
+    const e = loadEmitter();
+    if (e) { for (const k of EMITTER_FIELDS) { if (e[k]) data[k] = e[k]; } }
+    return data;
+  }
+
+  // ---------- Indicateur de modifications ----------
+  function markDirty() { if (!dirty) { dirty = true; renderDirty(); } }
+  function clearDirty() { dirty = false; renderDirty(); }
+  function renderDirty() {
+    const b = document.getElementById("dirtyBadge");
+    if (b) b.hidden = !dirty;
+  }
+
+  // ---------- Rendu de la liste des factures ----------
+  function renderInvoiceList() {
+    const ul = document.getElementById("invoiceList");
+    const hint = document.getElementById("emptyHint");
+    if (!ul) return;
+    if (invoices.length === 0) {
+      ul.innerHTML = "";
+      if (hint) hint.hidden = false;
+      return;
+    }
+    if (hint) hint.hidden = true;
+    ul.innerHTML = invoices.map(inv => `
+      <li class="invoice-row ${inv.id === currentId ? "active" : ""}" data-id="${escapeHtml(inv.id)}">
+        <button class="invoice-open" onclick="openInvoice('${inv.id}')" title="Ouvrir cette facture">
+          <span class="invoice-main">
+            <strong>${escapeHtml(inv.data.invoiceNumber || "—")}</strong>
+            <span class="invoice-client">${escapeHtml(inv.data.clientName || "Sans client")}</span>
+          </span>
+          <span class="invoice-sub">
+            <span class="invoice-date">${escapeHtml(inv.data.issueDate || "")}</span>
+            <span class="invoice-total">${escapeHtml(moneyToFrench(invoiceTotal(inv)))}</span>
+          </span>
+        </button>
+        <button class="delete invoice-del" onclick="deleteInvoice('${inv.id}')" title="Supprimer">Supprimer</button>
+      </li>
+    `).join("");
+  }
+
+  // ---------- Actions multi-factures ----------
+  function blankInvoiceData() {
+    const data = structuredClone(initialData);
+    data.invoiceNumber = nextInvoiceNumber();
+    data.issueDate = todayFr();
+    data.dueDate = "";
+    data.executionDates = "";
+    data.clientName = "";
+    data.clientAddress = "";
+    data.clientSiren = "";
+    data.clientSiret = "";
+    data.clientVat = "";
+    applyStoredEmitter(data);
+    return { data, items: structuredClone(initialItems) };
+  }
+  function newInvoice() {
+    if (dirty && !confirm("Abandonner les modifications non enregistrées ?")) return;
+    state = blankInvoiceData();
+    currentId = null;
+    syncFormFromState();
+    renderItems();
+    renderPreview();
+    renderInvoiceList();
+    clearDirty();
+  }
+  function saveCurrent() {
+    if (currentId) {
+      const idx = invoices.findIndex(x => x.id === currentId);
+      if (idx >= 0) {
+        invoices[idx] = { id: currentId, data: structuredClone(state.data), items: structuredClone(state.items) };
+      } else {
+        currentId = null; // le record a disparu : on en recrée un
+      }
+    }
+    if (!currentId) {
+      const id = makeId();
+      invoices.push({ id, data: structuredClone(state.data), items: structuredClone(state.items) });
+      currentId = id;
+    }
+    saveStore();
+    clearDirty();
+    renderInvoiceList();
+  }
+  function openInvoice(id) {
+    if (dirty && !confirm("Abandonner les modifications non enregistrées ?")) return;
+    const rec = invoices.find(x => x.id === id);
+    if (!rec) return;
+    state = { data: structuredClone(rec.data), items: structuredClone(rec.items) };
+    currentId = id;
+    syncFormFromState();
+    renderItems();
+    renderPreview();
+    renderInvoiceList();
+    clearDirty();
+  }
+  function deleteInvoice(id) {
+    const rec = invoices.find(x => x.id === id);
+    if (!rec) return;
+    if (!confirm("Supprimer la facture " + (rec.data.invoiceNumber || "") + " ? Cette action est définitive.")) return;
+    invoices = invoices.filter(x => x.id !== id);
+    if (id === currentId) currentId = null;
+    saveStore();
+    renderInvoiceList();
+  }
+
+  // ---------- Helpers ----------
+  function parseNumber(v) {
+    return Number(String(v).replace(/\s/g, "").replace(",", ".")) || 0;
+  }
+  function moneyToFrench(v) {
+    const n = parseNumber(v);
+    return n.toLocaleString("fr-FR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + " €";
+  }
+  function lineTotal(item) {
+    return parseNumber(item.unitPrice) * parseNumber(item.quantity);
+  }
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+  function multilineHtml(s) {
+    return escapeHtml(s).split(/\n+/).filter(Boolean).join("<br>");
+  }
+
+  // ---------- Rendu de l'aperçu ----------
+  function renderPreview() {
+    // Champs simples (data-preview)
+    document.querySelectorAll("[data-preview]").forEach(el => {
+      const key = el.dataset.preview;
+      const value = state.data[key] ?? "";
+      if (el.dataset.multiline === "1") {
+        el.innerHTML = multilineHtml(value);
+      } else {
+        el.textContent = value;
+      }
+    });
+
+    // Lignes du tableau
+    const tbody = document.getElementById("previewItemsBody");
+    tbody.innerHTML = state.items.map(item => `
+      <tr>
+        <td>${escapeHtml(item.description)}</td>
+        <td class="amount">${escapeHtml(moneyToFrench(item.unitPrice))}</td>
+        <td class="amount">${escapeHtml(item.quantity)}</td>
+        <td class="amount">${escapeHtml(item.vat)}</td>
+        <td class="amount">${escapeHtml(moneyToFrench(lineTotal(item)))}</td>
+      </tr>
+    `).join("");
+
+    // Totaux
+    const total = state.items.reduce((s, it) => s + lineTotal(it), 0);
+    document.getElementById("previewSubtotal").textContent = moneyToFrench(total);
+    document.getElementById("previewTotal").textContent = moneyToFrench(total);
+  }
+
+  // ---------- Rendu du formulaire (lignes uniquement, le reste est statique) ----------
+  function renderItems() {
+    const container = document.getElementById("itemsContainer");
+    container.innerHTML = state.items.map((item, i) => `
+      <div class="item-card" data-item-index="${i}">
+        <div class="item-head">
+          <strong>Ligne ${i + 1}</strong>
+          <div class="item-head-actions">
+            <button class="move" onclick="moveItem(${i}, -1)" ${i === 0 ? "disabled" : ""} title="Monter">↑</button>
+            <button class="move" onclick="moveItem(${i}, 1)" ${i === state.items.length - 1 ? "disabled" : ""} title="Descendre">↓</button>
+            <button class="duplicate" onclick="duplicateItem(${i})">Dupliquer</button>
+            ${state.items.length > 1
+              ? `<button class="delete" onclick="removeItem(${i})">Supprimer</button>`
+              : ""}
+          </div>
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <textarea data-item="${i}" data-key="description">${escapeHtml(item.description)}</textarea>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Prix HT</label>
+            <input data-item="${i}" data-key="unitPrice" value="${escapeHtml(item.unitPrice)}">
+          </div>
+          <div class="field">
+            <label>Quantité</label>
+            <input data-item="${i}" data-key="quantity" value="${escapeHtml(item.quantity)}">
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>TVA</label>
+            <input data-item="${i}" data-key="vat" value="${escapeHtml(item.vat)}">
+          </div>
+          <div class="field">
+            <label>Montant calculé</label>
+            <input class="item-amount" value="${escapeHtml(moneyToFrench(lineTotal(item)))}" readonly>
+          </div>
+        </div>
+      </div>
+    `).join("");
+
+    // Brancher les listeners sur les nouveaux inputs
+    container.querySelectorAll("[data-item]").forEach(el => {
+      el.addEventListener("input", () => {
+        const i = Number(el.dataset.item);
+        const key = el.dataset.key;
+        state.items[i][key] = el.value;
+        // Mettre à jour le montant calculé du formulaire
+        const card = container.querySelector(`[data-item-index="${i}"]`);
+        if (card) {
+          const amountInput = card.querySelector(".item-amount");
+          if (amountInput) amountInput.value = moneyToFrench(lineTotal(state.items[i]));
+        }
+        markDirty();
+        renderPreview();
+      });
+    });
+  }
+
+  // ---------- Synchronisation formulaire principal ----------
+  function syncFormFromState() {
+    document.querySelectorAll("[data-field]").forEach(el => {
+      const key = el.dataset.field;
+      el.value = state.data[key] ?? "";
+    });
+  }
+
+  // ---------- Actions sur les lignes ----------
+  function addItem() {
+    state.items.push({ description: "Nouvelle ligne", unitPrice: "0.00", quantity: "1", vat: "-" });
+    markDirty();
+    renderItems();
+    renderPreview();
+  }
+  function removeItem(i) {
+    if (state.items.length <= 1) return;
+    state.items.splice(i, 1);
+    markDirty();
+    renderItems();
+    renderPreview();
+  }
+  function duplicateItem(i) {
+    const copy = { ...state.items[i] };
+    state.items.splice(i + 1, 0, copy);
+    markDirty();
+    renderItems();
+    renderPreview();
+  }
+  function moveItem(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= state.items.length) return;
+    [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+    markDirty();
+    renderItems();
+    renderPreview();
+  }
+
+  // ---------- Réinitialisation ----------
+  function resetTemplate() {
+    if (!confirm("Réinitialiser tous les champs avec le modèle par défaut ?")) return;
+    state = {
+      data: structuredClone(initialData),
+      items: structuredClone(initialItems)
+    };
+    syncFormFromState();
+    renderItems();
+    renderPreview();
+  }
+
+  // ---------- Export / Import JSON ----------
+  function exportJSON() {
+    const blob = new Blob(
+      [JSON.stringify(state, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const name = (state.data.invoiceNumber || "facture").replace(/[^a-z0-9._-]+/gi, "_");
+    a.href = url;
+    a.download = `${name}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (parsed && Array.isArray(parsed.invoices)) {
+          // Sauvegarde complète (collection) : remplace l'historique
+          invoices = parsed.invoices
+            .filter(x => x && x.data && Array.isArray(x.items))
+            .map(x => ({ id: x.id || makeId(), data: x.data, items: x.items }));
+          saveStore();
+          if (invoices.length) {
+            const rec = invoices[0];
+            state = { data: structuredClone(rec.data), items: structuredClone(rec.items) };
+            currentId = rec.id;
+            saveEmitterFrom(state.data);
+            syncFormFromState();
+            renderItems();
+            renderPreview();
+            clearDirty();
+          }
+          renderInvoiceList();
+        } else if (parsed && parsed.data && Array.isArray(parsed.items)) {
+          // Ancien format (facture unique) : chargé comme brouillon non enregistré
+          state = { data: parsed.data, items: parsed.items };
+          currentId = null;
+          saveEmitterFrom(state.data);
+          syncFormFromState();
+          renderItems();
+          renderPreview();
+          renderInvoiceList();
+          markDirty();
+        } else {
+          throw new Error("Structure invalide");
+        }
+      } catch (err) {
+        alert("Fichier JSON invalide : " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function exportAll() {
+    const blob = new Blob(
+      [JSON.stringify({ invoices }, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "factures-sauvegarde.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Initialisation ----------
+  document.addEventListener("DOMContentLoaded", () => {
+    // Listeners sur tous les champs principaux
+    document.querySelectorAll("[data-field]").forEach(el => {
+      el.addEventListener("input", () => {
+        state.data[el.dataset.field] = el.value;
+        if (el.dataset.field.indexOf("emitter") === 0) saveEmitterFrom(state.data);
+        markDirty();
+        renderPreview();
+      });
+    });
+
+    // Listener import
+    document.getElementById("importFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) importJSON(file);
+      e.target.value = ""; // permet de ré-importer le même fichier
+    });
+
+    // Charger l'historique + l'émetteur enregistré, préparer le brouillon de départ
+    loadStore();
+    applyStoredEmitter(state.data);
+    state.data.invoiceNumber = nextInvoiceNumber();
+    if (!state.data.issueDate) state.data.issueDate = todayFr();
+
+    syncFormFromState();
+    renderItems();
+    renderPreview();
+    renderInvoiceList();
+    renderDirty();
+  });
+</script>
+</body>
+</html>

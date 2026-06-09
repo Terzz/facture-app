@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Éditeurs / IDE / outils
+.vscode/
+.idea/
+.claude/
+*.swp
+*~
+
+# Windows
+Thumbs.db
+
+# Sauvegardes locales de factures exportées (contiennent des données client réelles
+# — NE PAS publier dans un repo public). L'app stocke les factures dans le navigateur,
+# ces .json ne sont que des exports/sauvegardes manuels.
+*.json
+
+# Brief de travail (données de référence personnelles, non destiné à la publication)
+BRIEF-claude-code.md
