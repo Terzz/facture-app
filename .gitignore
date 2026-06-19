@@ -21,3 +21,7 @@ Thumbs.db
 
 # Brief de travail (données de référence personnelles, non destiné à la publication)
 BRIEF-claude-code.md
+
+# Ancienne version mono-facture avec données perso codées en dur (ne pas publier).
+# Remplacée par index.html (émetteur en localStorage, source public sans donnée perso).
+facture.html

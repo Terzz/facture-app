@@ -12,9 +12,11 @@ PDF, et gestion **multi-factures** avec historique enregistré dans le navigateu
 - **Multi-factures** : enregistre plusieurs factures et les garde en mémoire du navigateur.
 - **Historique** : liste des factures enregistrées (numéro, client, date, total) ; clic pour rouvrir
   et modifier ; suppression possible.
-- **Numérotation automatique** : `INV-1`, `INV-2`, `INV-3`… le prochain numéro se calcule tout seul
-  (le champ reste modifiable manuellement).
-- Calcul des totaux au format français, mention **« TVA non applicable, art. 293 B du CGI »**.
+- **Numérotation automatique** : `2026-001`, `2026-002`, `2026-003`… (format `AAAA-00N`) — le prochain
+  numéro se calcule tout seul (le champ reste modifiable manuellement).
+- Calcul du total au format français, mention **« TVA non applicable, article 293 B du CGI »**, et
+  **clause de pénalités de retard** activable (interrupteur). Chaque ligne peut porter un **détail**
+  optionnel (ex. date de séance).
 - **Impression / PDF** via le navigateur (`window.print()`).
 - **Export / Import JSON** (par facture, et sauvegarde complète de l'historique).
 
@@ -69,8 +71,8 @@ numéro de facture et la date — Cowork n'a qu'à extraire le **client** et les
 Prompt à donner à Cowork (avec la capture jointe) :
 
 > À partir de cette capture de mes notes, génère **uniquement** un JSON (aucun texte autour), au format :
-> `{ "data": { "clientName": "", "clientAddress": "", "executionDates": "" }, "items": [ { "description": "", "unitPrice": "20.00", "quantity": "1", "vat": "-" } ] }`
-> Règles : prise de son = 20.00 €/h (`quantity` = nombre d'heures) ; mix = forfait (`quantity` 1, `unitPrice` = prix du forfait). `vat` toujours `"-"`. N'inclus **ni** numéro de facture, **ni** dates d'émission/échéance, **ni** infos émetteur (l'app les remplit).
+> `{ "client": { "name": "", "address": "", "siret": "", "tva": "" }, "lines": [ { "desc": "", "detail": "Séance du JJ/MM/AAAA", "unit": 20, "qty": 1 } ] }`
+> Règles : prise de son = `unit` 20 (`qty` = nombre d'heures), date de la séance dans `detail` ; mix = forfait (`qty` 1, `unit` = prix du forfait, `detail` vide). `unit` et `qty` sont des **nombres**. N'inclus **ni** numéro de facture, **ni** dates d'émission/échéance, **ni** infos émetteur (l'app les remplit à l'import).
 
 Puis dans l'app : **Importer JSON** → relis/corrige si besoin → **Enregistrer**.
 
